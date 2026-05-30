@@ -495,8 +495,12 @@ async function abrirCamara() {
   setStatus("Iniciando cámara…");
 
   try {
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-
+    // const codeReader = new ZXing.BrowserMultiFormatReader();
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.CODE_128]);
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    const codeReader = new ZXing.BrowserMultiFormatReader(hints);
+    
     // Listamos dispositivos y preferimos cámara trasera
     const devices = await codeReader.listVideoInputDevices();
     if (!devices.length) throw new Error("No se encontraron cámaras");
