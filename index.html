@@ -7,6 +7,10 @@
 
   <!-- ZXing: lee EAN-13 desde la cámara. UMD expone window.ZXing -->
   <script src="https://unpkg.com/@zxing/library@latest"></script>
+  <script>
+    console.log("ZXing disponible:", typeof ZXing);
+    console.log("ZXing keys:", typeof ZXing !== "undefined" ? Object.keys(ZXing) : "N/A");
+  </script>
 
   <style>
     :root {
