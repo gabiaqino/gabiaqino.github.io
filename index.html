@@ -4,9 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Precios</title>
-
-  <!-- ZXing: lee EAN-13 desde la cámara. UMD expone window.ZXing -->
-  <script src="https://unpkg.com/@zxing/library@latest"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
   <script>
     console.log("ZXing disponible:", typeof ZXing);
     console.log("ZXing keys:", typeof ZXing !== "undefined" ? Object.keys(ZXing) : "N/A");
@@ -486,60 +485,48 @@ btnScan.addEventListener("click", () => {
 btnCerrarCamara.addEventListener("click", cerrarCamara);
 
 async function abrirCamara() {
-  if (typeof ZXing === "undefined") {
-    setStatus("⚠️ Librería ZXing no cargó. Revisá la conexión.");
-    return;
-  }
-
   scannerContainer.classList.add("active");
   setStatus("Iniciando cámara…");
 
-  try {
-    // const codeReader = new ZXing.BrowserMultiFormatReader();
-    const hints = new Map();
-    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8, ZXing.BarcodeFormat.CODE_128]);
-    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-    const codeReader = new ZXing.BrowserMultiFormatReader(hints);
-    
-    // Listamos dispositivos y preferimos cámara trasera
-    const devices = await codeReader.listVideoInputDevices();
-    if (!devices.length) throw new Error("No se encontraron cámaras");
-
-    const back = devices.find(d => /back|rear|environment/i.test(d.label))
-                 || devices[devices.length - 1];
-
-    // decodeFromVideoDevice devuelve un objeto controls con .stop()
-    scanControls = await codeReader.decodeFromVideoDevice(
-      back.deviceId,
-      preview,
-      (result, err) => {
-        if (result) {
-          const ean = result.getText();
-          cerrarCamara();
-          searchInput.value = ean;
-          buscarEAN(ean);
-        }
-        // err entre frames es normal (NotFoundException), no la mostramos
+  Quagga.init({
+    inputStream: {
+      type: "LiveStream",
+      target: preview,
+      constraints: {
+        facingMode: "environment",   // cámara trasera
+        width:  { ideal: 1280 },
+        height: { ideal: 720 }
       }
-    );
-
+    },
+    decoder: {
+      readers: ["ean_reader", "ean_8_reader", "code_128_reader"],
+      multiple: false
+    },
+    locate: true
+  }, function(err) {
+    if (err) {
+      setStatus("⚠️ Cámara: " + err.message);
+      cerrarCamara();
+      return;
+    }
+    Quagga.start();
+    scanControls = true;
     setStatus("Cámara activa — apuntá al código");
-  } catch(e) {
-    setStatus("⚠️ Cámara: " + e.message);
+  });
+
+  // Quagga emite cada detección aquí
+  Quagga.onDetected(function(result) {
+    const ean = result.codeResult.code;
     cerrarCamara();
-  }
+    searchInput.value = ean;
+    buscarEAN(ean);
+  });
 }
 
 function cerrarCamara() {
-  if (scanControls) {
-    try { scanControls.stop(); } catch(e) {}
-    scanControls = null;
-  }
-  // Por las dudas detenemos tracks manualmente también
-  if (preview.srcObject) {
-    preview.srcObject.getTracks().forEach(t => t.stop());
-    preview.srcObject = null;
-  }
+  Quagga.offDetected();
+  try { Quagga.stop(); } catch(e) {}
+  scanControls = null;
   scannerContainer.classList.remove("active");
   setStatus("");
 }
