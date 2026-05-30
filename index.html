@@ -498,7 +498,7 @@ async function abrirCamara() {
     const codeReader = new ZXing.BrowserMultiFormatReader();
 
     // Listamos dispositivos y preferimos cámara trasera
-    const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+    const devices = await codeReader.listVideoInputDevices();
     if (!devices.length) throw new Error("No se encontraron cámaras");
 
     const back = devices.find(d => /back|rear|environment/i.test(d.label))
