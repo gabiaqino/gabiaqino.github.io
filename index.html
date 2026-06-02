@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Precios</title>
+  <title>GAbi Aquino, VERIFICADOR DE PRECIOS</title>
+    <link rel="manifest" href="/manifest.json">
+  <!-- Color de la barra de estado en móviles -->
+  <meta name="theme-color" content="#000000">
   
   <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2/dist/quagga.min.js"></script>
 
@@ -467,13 +470,6 @@ carritoHeader.addEventListener("click", () => {
   carritoItemsEl.classList.toggle("open", carritoOpen);
 });
 
-// ── Escáner ZXing ──────────────────────────────────
-// @zxing/library UMD expone window.ZXing
-// Clase: ZXing.BrowserMultiFormatReader
-// API: codeReader.decodeFromVideoDevice(deviceId, videoElement, callback)
-//      callback recibe (result, err, controls)
-//      controls.stop() para detener
-
 btnScan.addEventListener("click", () => {
   if (scanControls) { cerrarCamara(); return; }
   abrirCamara();
@@ -510,7 +506,6 @@ async function abrirCamara() {
     setStatus("Cámara activa — apuntá al código");
   });
 
-  // Quagga emite cada detección aquí
   Quagga.onDetected(function(result) {
     const ean = result.codeResult.code;
     cerrarCamara();
@@ -539,5 +534,15 @@ function esc(s) {
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 </script>
+
+<script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('Service Worker registrado con éxito', reg))
+          .catch(err => console.error('Error al registrar el Service Worker', err));
+      });
+    }
+  </script>
 </body>
 </html>
