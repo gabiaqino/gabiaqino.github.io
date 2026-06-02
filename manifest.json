@@ -1,0 +1,6 @@
+{
+  "name": "Gabi Aquino - Verificador de precios",
+  "short_name": "GabiPOS",
+  "start_url": "/index.html",
+  "display": "standalone"
+}
