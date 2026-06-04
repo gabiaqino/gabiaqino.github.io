@@ -100,14 +100,23 @@
       border-bottom: 1px solid var(--border);
     }
     #scannerContainer.active { display: block; }
-    #preview {
-      width: 100%;
-      max-height: 240px;
-      object-fit: cover;
-      border-radius: var(--radius);
-      background: #000;
-      display: block;
-    }
+#preview {
+  width: 100%;
+  height: 220px;
+  border-radius: var(--radius);
+  background: #000;
+  display: block;
+  position: relative;
+  overflow: hidden;
+}
+#preview video,
+#preview canvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
     .scan-hint {
       font-size: .8rem;
       color: var(--muted);
@@ -480,18 +489,20 @@ async function abrirCamara() {
   scannerContainer.classList.add("active");
   setStatus("Iniciando cámara…");
 
+  let lecturas = {};  // cuenta cuántas veces se leyó cada código
+
   Quagga.init({
     inputStream: {
       type: "LiveStream",
       target: document.querySelector("#preview"),
       constraints: {
-        facingMode: "environment",   // cámara trasera
+        facingMode: "environment",
         width:  { ideal: 1280 },
         height: { ideal: 720 }
       }
     },
     decoder: {
-      readers: ["ean_reader", "ean_8_reader", "code_128_reader"],
+      readers: ["ean_reader", "code_128_reader"],
       multiple: false
     },
     locate: true
@@ -507,11 +518,26 @@ async function abrirCamara() {
   });
 
   Quagga.onDetected(function(result) {
-    const ean = result.codeResult.code;
-    cerrarCamara();
-    searchInput.value = ean;
-    buscarEAN(ean);
-  });
+  const codigo = result.codeResult.code;
+  const formato = result.codeResult.format;
+
+  // EAN-13: validar dígito verificador
+  if (formato === "ean_13") {
+    if (!/^\d{13}$/.test(codigo)) return;
+    if (!validarEAN13(codigo)) return;
+  }
+
+  // Code 128: solo exigimos que no esté vacío
+  if (!codigo || codigo.trim() === "") return;
+
+  // 3 lecturas consecutivas del mismo código
+  lecturas[codigo] = (lecturas[codigo] || 0) + 1;
+  if (lecturas[codigo] < 3) return;
+
+  cerrarCamara();
+  searchInput.value = codigo;
+  buscarEAN(codigo);
+});
 }
 
 function cerrarCamara() {
@@ -533,6 +559,15 @@ function esc(s) {
     .replace(/&/g,"&amp;").replace(/</g,"&lt;")
     .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
+function validarEAN13(codigo) {
+  let suma = 0;
+  for (let i = 0; i < 12; i++) {
+    suma += parseInt(codigo[i]) * (i % 2 === 0 ? 1 : 3);
+  }
+  const verificador = (10 - (suma % 10)) % 10;
+  return verificador === parseInt(codigo[12]);
+}
+  
 </script>
 
 <script>
